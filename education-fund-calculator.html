@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kalkulator Dana Pendidikan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --ink:#0f172a; --panel:#1e293b; --panel-soft:#1e293b99; --border:#334155;
+    --gold:#fbbf24; --emerald:#34d399; --sky:#38bdf8; --pink:#f472b6; --violet:#a78bfa; --orange:#fb923c;
+    --sand:#f8fafc; --muted:#94a3b8;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--ink); color:var(--sand);
+    font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased;
+  }
+  .efc-wrap{ max-width:1120px; margin:0 auto; padding:40px 20px 60px; }
+  .efc-serif{ font-family:'Fraunces',serif; }
+  .efc-header{ display:flex; gap:16px; align-items:flex-start; margin-bottom:28px; }
+  .efc-icon-badge{
+    width:44px; height:44px; border-radius:12px; flex-shrink:0;
+    background:rgba(52,211,153,.15); display:flex; align-items:center; justify-content:center;
+  }
+  .efc-eyebrow{ font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--gold); margin:0 0 8px; }
+  .efc-h1{ font-size:32px; line-height:1.15; margin:0; }
+  .efc-sub{ color:var(--muted); font-size:14px; line-height:1.6; margin:10px 0 0; max-width:560px; }
+
+  .efc-scenarios{ display:flex; flex-wrap:wrap; gap:12px; margin-bottom:28px; }
+  .efc-scenario{
+    flex:1 1 160px; text-align:left; border:1px solid var(--border); background:rgba(30,41,59,.4);
+    border-radius:12px; padding:12px 16px; cursor:pointer; color:inherit; font-family:inherit;
+    transition:.15s;
+  }
+  .efc-scenario:hover{ border-color:#475569; }
+  .efc-scenario.active{ border-color:rgba(52,211,153,.6); background:rgba(52,211,153,.1); }
+  .efc-scenario-top{ display:flex; align-items:center; gap:6px; font-size:13px; font-weight:500; margin-bottom:2px; }
+  .efc-scenario-rate{ margin-left:auto; font-size:12px; color:var(--muted); }
+  .efc-scenario-desc{ font-size:11px; color:#64748b; }
+
+  .efc-grid{ display:grid; grid-template-columns:2fr 3fr; gap:32px; align-items:start; }
+  @media (max-width:900px){ .efc-grid{ grid-template-columns:1fr; } }
+
+  .efc-section-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .efc-h2{ font-size:18px; margin:0; }
+  .efc-btn{
+    display:inline-flex; align-items:center; gap:6px; font-size:11px; letter-spacing:.05em; text-transform:uppercase;
+    border:1px solid rgba(52,211,153,.4); color:var(--emerald); background:transparent; border-radius:999px;
+    padding:8px 14px; cursor:pointer; font-family:inherit; transition:.15s;
+  }
+  .efc-btn:hover{ background:rgba(52,211,153,.1); }
+  .efc-btn-primary{
+    border:none; background:var(--gold); color:#1e1b0e; font-weight:600; border-radius:999px;
+    padding:12px 26px; cursor:pointer; font-family:inherit; font-size:14px;
+  }
+
+  .efc-children{ display:flex; flex-direction:column; gap:12px; }
+  .efc-card{ border-radius:16px; border:1px solid var(--border); background:rgba(30,41,59,.5); overflow:hidden; transition:.2s; }
+  .efc-card-head{ width:100%; display:flex; align-items:center; justify-content:space-between; padding:14px 18px; cursor:pointer; background:none; border:none; color:inherit; font-family:inherit; text-align:left; }
+  .efc-dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-right:10px; }
+  .efc-card-name{ background:transparent; border:none; border-bottom:1px solid transparent; color:var(--sand); font-family:'Fraunces',serif; font-size:15px; padding:2px 0; min-width:0; }
+  .efc-card-name:focus{ outline:none; border-bottom-color:rgba(52,211,153,.6); }
+  .efc-card-left{ display:flex; align-items:center; min-width:0; flex:1; }
+  .efc-card-right{ display:flex; align-items:center; gap:10px; flex-shrink:0; }
+  .efc-age-hint{ font-size:11px; color:var(--muted); white-space:nowrap; }
+  .efc-remove{ color:#64748b; cursor:pointer; font-size:15px; padding:2px 4px; }
+  .efc-remove:hover{ color:var(--orange); }
+  .efc-chevron{ transition:transform .2s; color:#64748b; }
+  .efc-card.open .efc-chevron{ transform:rotate(180deg); }
+  .efc-card-body{ display:grid; grid-template-rows:0fr; transition:grid-template-rows .25s ease; }
+  .efc-card.open .efc-card-body{ grid-template-rows:1fr; }
+  .efc-card-body-inner{ overflow:hidden; }
+  .efc-fields{ padding:2px 18px 18px; display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .efc-fields .full{ grid-column:1 / -1; }
+  @media (max-width:480px){ .efc-fields{ grid-template-columns:1fr; } }
+
+  .efc-label{ font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); display:flex; align-items:center; gap:5px; margin-bottom:6px; }
+  .efc-input-wrap{ position:relative; }
+  .efc-input, .efc-input-currency{
+    width:100%; background:rgba(2,6,23,.5); border:1px solid var(--border); border-radius:8px;
+    padding:9px 12px; color:var(--sand); font-size:13px; font-family:inherit;
+  }
+  .efc-input-currency{ padding-left:30px; }
+  .efc-input:focus, .efc-input-currency:focus{ outline:none; border-color:rgba(52,211,153,.5); box-shadow:0 0 0 2px rgba(52,211,153,.15); }
+  .efc-currency-prefix{ position:absolute; left:11px; top:50%; transform:translateY(-50%); font-size:11px; color:#64748b; }
+  .efc-suffix{ position:absolute; right:11px; top:50%; transform:translateY(-50%); font-size:11px; color:#64748b; pointer-events:none; }
+
+  .efc-slider-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .efc-slider-val{ font-size:13px; font-weight:600; color:var(--emerald); }
+  input[type=range]{ width:100%; height:5px; border-radius:999px; appearance:none; background:var(--border); cursor:pointer; }
+  input[type=range]::-webkit-slider-thumb{ appearance:none; width:15px; height:15px; border-radius:50%; background:var(--emerald); cursor:pointer; border:2px solid #0f172a; }
+  input[type=range]::-moz-range-thumb{ width:15px; height:15px; border-radius:50%; background:var(--emerald); cursor:pointer; border:2px solid #0f172a; }
+
+  .efc-kpis{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px; }
+  @media (max-width:480px){ .efc-kpis{ grid-template-columns:1fr; } }
+  .efc-kpi{ background:rgba(30,41,59,.7); border:1px solid var(--border); border-radius:16px; padding:18px; }
+  .efc-kpi-label{ display:flex; align-items:center; gap:5px; font-size:11px; color:var(--muted); margin-bottom:6px; }
+  .efc-kpi-big{ font-family:'Fraunces',serif; font-size:26px; margin:0; }
+  .efc-kpi-sub{ font-size:11px; color:#64748b; margin-top:3px; }
+
+  .efc-panel{ background:rgba(30,41,59,.7); border:1px solid var(--border); border-radius:16px; padding:24px; margin-bottom:20px; }
+  .efc-panel-eyebrow{ display:flex; align-items:center; gap:6px; font-size:11px; text-transform:uppercase; letter-spacing:.15em; color:var(--muted); margin-bottom:4px; }
+  .efc-panel-title{ font-size:19px; margin:0 0 18px; }
+
+  .efc-results{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:600px){ .efc-results{ grid-template-columns:1fr; } }
+  .efc-result-card{ background:rgba(30,41,59,.6); border:1px solid var(--border); border-radius:16px; padding:18px; }
+  .efc-result-top{ display:flex; gap:14px; align-items:center; margin-bottom:14px; }
+  .efc-result-name{ font-family:'Fraunces',serif; font-size:16px; margin:0; }
+  .efc-result-meta{ font-size:11px; color:var(--muted); margin:2px 0 0; }
+  .efc-row{ display:flex; justify-content:space-between; align-items:center; font-size:12px; padding:5px 0; }
+  .efc-row-label{ color:var(--muted); }
+  .efc-row-value{ font-weight:600; }
+  .efc-divider{ height:1px; margin:14px 0; background:linear-gradient(90deg,transparent,#33415580,transparent); }
+  .efc-chips{ display:flex; flex-wrap:wrap; gap:6px; }
+  .efc-chip{ font-size:10.5px; background:rgba(2,6,23,.5); border:1px solid var(--border); border-radius:6px; padding:4px 8px; color:#e2e8f0; }
+
+  .efc-chart-wrap{ height:300px; }
+  .efc-footer{ font-size:11px; color:#64748b; margin-top:30px; padding-top:20px; border-top:1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<div class="efc-wrap">
+
+  <div class="efc-header">
+    <div class="efc-icon-badge">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5Z"/><path d="M6 12v5c0 1.66 3 3 6 3s6-1.34 6-3v-5"/></svg>
+    </div>
+    <div>
+      <p class="efc-eyebrow">Perencanaan Keuangan Keluarga</p>
+      <h1 class="efc-h1 efc-serif">Kalkulator Dana Pendidikan</h1>
+      <p class="efc-sub">Hasil terupdate otomatis setiap kamu mengubah angka — geser slider, ketik nominal, atau coba skenario imbal hasil di bawah.</p>
+    </div>
+  </div>
+
+  <div class="efc-scenarios" id="efc-scenarios"></div>
+
+  <div class="efc-grid">
+    <section>
+      <div class="efc-section-head">
+        <h2 class="efc-h2 efc-serif">Data anak</h2>
+        <button class="efc-btn" id="efc-add-child">+ Tambah</button>
+      </div>
+      <div class="efc-children" id="efc-children"></div>
+    </section>
+
+    <section>
+      <div class="efc-kpis" id="efc-kpis"></div>
+
+      <div class="efc-panel">
+        <p class="efc-panel-eyebrow">Proyeksi</p>
+        <h3 class="efc-panel-title efc-serif">Kurva pertumbuhan dana per anak</h3>
+        <div class="efc-chart-wrap"><canvas id="efc-chart"></canvas></div>
+      </div>
+
+      <div class="efc-results" id="efc-results"></div>
+    </section>
+  </div>
+
+  <p class="efc-footer">
+    Perhitungan bersifat estimasi berdasarkan asumsi inflasi dan imbal hasil yang kamu masukkan.
+    Hasil investasi aktual dapat berbeda.
+  </p>
+<p class="efc-footer">
+    Designed by Desta Riani. 2026.
+  </p>
+</div>
+
+<script>
+/* =======================================================================
+   ALGORITMA — identik dengan versi Laravel (EducationFundCalculatorService.php)
+   ======================================================================= */
+function calculateForChild(child, index) {
+  const name = (child.name || '').trim() || ('Anak ' + (index + 1));
+  const currentAge = Number(child.current_age) || 0;
+  const startAge = Number(child.education_start_age) || 0;
+  const duration = Math.max(1, Math.round(Number(child.education_duration_years) || 4));
+  const currentAnnualCost = Number(child.current_annual_cost) || 0;
+  const inflation = (Number(child.education_inflation_rate) || 0) / 100;
+  const returnRate = (Number(child.expected_return_rate) || 0) / 100;
+  const existingSavings = Number(child.existing_savings) || 0;
+
+  const yearsUntilStart = Math.max(0, startAge - currentAge);
+
+  const yearlyFutureCosts = [];
+  for (let k = 1; k <= duration; k++) {
+    yearlyFutureCosts.push(currentAnnualCost * Math.pow(1 + inflation, yearsUntilStart + (k - 1)));
+  }
+  const totalNominalCost = yearlyFutureCosts.reduce((a, b) => a + b, 0);
+
+  let rfas = 0;
+  yearlyFutureCosts.forEach((cost, k0) => { rfas += cost / Math.pow(1 + returnRate, k0); });
+
+  const fvExisting = existingSavings * Math.pow(1 + returnRate, yearsUntilStart);
+  const gap = Math.max(0, rfas - fvExisting);
+
+  let monthlyContribution = 0;
+  let isLumpSumRequired = false;
+
+  if (yearsUntilStart <= 0) {
+    monthlyContribution = gap;
+    isLumpSumRequired = true;
+  } else if (gap > 0) {
+    const monthlyRate = Math.pow(1 + returnRate, 1 / 12) - 1;
+    const totalMonths = Math.round(yearsUntilStart * 12);
+    if (monthlyRate > 0) {
+      const denominator = Math.pow(1 + monthlyRate, totalMonths) - 1;
+      monthlyContribution = denominator > 0 ? (gap * monthlyRate) / denominator : gap / totalMonths;
+    } else {
+      monthlyContribution = totalMonths > 0 ? gap / totalMonths : gap;
+    }
+  }
+
+  const pvToday = rfas / Math.pow(1 + returnRate, yearsUntilStart);
+  const inflationImpact = totalNominalCost - currentAnnualCost * duration;
+  const coveragePct = rfas > 0 ? Math.min(100, (fvExisting / rfas) * 100) : 100;
+
+  return {
+    name, color: child.color,
+    years_until_start: Math.round(yearsUntilStart * 100) / 100,
+    education_duration_years: duration,
+    yearly_future_costs: yearlyFutureCosts,
+    total_nominal_cost: totalNominalCost,
+    inflation_impact: inflationImpact,
+    required_fund_at_start: rfas,
+    gap_to_cover: gap,
+    monthly_contribution: monthlyContribution,
+    present_value_today: pvToday,
+    is_lump_sum_required: isLumpSumRequired,
+    coverage_pct: coveragePct,
+    projection: buildChildProjection(yearsUntilStart, existingSavings, monthlyContribution, returnRate, isLumpSumRequired, gap),
+  };
+}
+
+function buildChildProjection(yearsUntilStart, existingSavings, monthlyContribution, returnRate, isLumpSumRequired, gap) {
+  const years = Math.ceil(yearsUntilStart);
+  const monthlyRate = Math.pow(1 + returnRate, 1 / 12) - 1;
+  let balance = existingSavings;
+  const projection = [];
+  if (isLumpSumRequired || years <= 0) return [{ year: 0, balance: existingSavings + gap }];
+  projection.push({ year: 0, balance });
+  for (let year = 1; year <= years; year++) {
+    for (let m = 1; m <= 12; m++) balance = balance * (1 + monthlyRate) + monthlyContribution;
+    projection.push({ year, balance });
+  }
+  return projection;
+}
+
+function balanceAtYear(projection, year) {
+  let last = 0;
+  for (const point of projection) {
+    if (point.year > year) break;
+    last = point.balance;
+  }
+  return last;
+}
+
+function calculateEducationFund(children) {
+  const results = children.map((c, i) => calculateForChild(c, i));
+
+  let totalMonthly = 0, totalRequiredFund = 0, totalGap = 0, totalPvToday = 0;
+  results.forEach((r) => {
+    totalMonthly += r.is_lump_sum_required ? 0 : r.monthly_contribution;
+    totalRequiredFund += r.required_fund_at_start;
+    totalGap += r.gap_to_cover;
+    totalPvToday += r.present_value_today;
+  });
+
+  let maxYear = 0;
+  results.forEach((r) => { maxYear = Math.max(maxYear, r.projection[r.projection.length - 1]?.year || 0); });
+  const yearlyProjection = [];
+  for (let year = 0; year <= maxYear; year++) {
+    const row = { year, total: 0, perChild: [] };
+    results.forEach((r) => {
+      const bal = balanceAtYear(r.projection, year);
+      row.perChild.push(bal);
+      row.total += bal;
+    });
+    yearlyProjection.push(row);
+  }
+
+  return {
+    children: results,
+    summary: {
+      total_children: results.length,
+      total_monthly_contribution: totalMonthly,
+      total_required_fund_at_start: totalRequiredFund,
+      total_gap_to_cover: totalGap,
+      total_present_value_today: totalPvToday,
+    },
+    yearly_projection: yearlyProjection,
+  };
+}
+
+/* ======================================================================= */
+
+function formatRupiah(v) {
+  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(v) || 0);
+}
+function formatCompact(v) {
+  const n = Number(v) || 0;
+  if (n >= 1e9) return 'Rp' + (n / 1e9).toFixed(1) + ' M';
+  if (n >= 1e6) return 'Rp' + (n / 1e6).toFixed(0) + ' jt';
+  return formatRupiah(n);
+}
+function formatNumberID(v) { return new Intl.NumberFormat('id-ID').format(Number(v) || 0); }
+
+const CHILD_COLORS = ['#34d399', '#38bdf8', '#f472b6', '#fbbf24', '#a78bfa', '#fb923c'];
+const SCENARIOS = [
+  { key: 'konservatif', label: 'Konservatif', rate: 6, desc: 'Deposito / obligasi' },
+  { key: 'moderat', label: 'Moderat', rate: 9, desc: 'Reksadana campuran' },
+  { key: 'agresif', label: 'Agresif', rate: 13, desc: 'Saham / reksadana saham' },
+];
+
+let state = {
+  children: [makeChild(0)],
+  expanded: 0,
+  activeScenario: null,
+};
+
+function makeChild(i) {
+  return {
+    name: '', current_age: 3, education_start_age: 18, education_duration_years: 4,
+    current_annual_cost: 20000000, education_inflation_rate: 10, expected_return_rate: 9,
+    existing_savings: 0, color: CHILD_COLORS[i % CHILD_COLORS.length],
+  };
+}
+
+let chartInstance = null;
+
+function render() {
+  renderScenarios();
+  renderChildren();
+  const result = calculateEducationFund(state.children);
+  renderKpis(result.summary);
+  renderChart(result);
+  renderResultCards(result.children);
+}
+
+function renderScenarios() {
+  const el = document.getElementById('efc-scenarios');
+  el.innerHTML = SCENARIOS.map((s) => `
+    <button type="button" class="efc-scenario ${state.activeScenario === s.key ? 'active' : ''}" data-key="${s.key}">
+      <div class="efc-scenario-top">
+        <span>${s.label}</span><span class="efc-scenario-rate">${s.rate}%</span>
+      </div>
+      <div class="efc-scenario-desc">${s.desc}</div>
+    </button>
+  `).join('');
+  el.querySelectorAll('.efc-scenario').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const s = SCENARIOS.find((x) => x.key === btn.dataset.key);
+      state.activeScenario = s.key;
+      state.children.forEach((c) => { c.expected_return_rate = s.rate; });
+      render();
+    });
+  });
+}
+
+function renderChildren() {
+  const el = document.getElementById('efc-children');
+  el.innerHTML = state.children.map((child, i) => childCardHtml(child, i)).join('');
+
+  el.querySelectorAll('[data-toggle]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      if (e.target.closest('[data-remove]') || e.target.closest('[data-namefield]')) return;
+      const i = Number(btn.dataset.toggle);
+      state.expanded = state.expanded === i ? -1 : i;
+      render();
+    });
+  });
+  el.querySelectorAll('[data-remove]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const i = Number(btn.dataset.remove);
+      state.children.splice(i, 1);
+      render();
+    });
+  });
+  el.querySelectorAll('[data-field]').forEach((input) => {
+    input.addEventListener('input', (e) => {
+      const i = Number(input.dataset.index);
+      const field = input.dataset.field;
+      let value = input.type === 'range' || input.type === 'number' ? Number(input.value) : input.value;
+      if (input.dataset.currency) {
+        const raw = input.value.replace(/[^\d]/g, '');
+        value = raw === '' ? 0 : Number(raw);
+        input.value = formatNumberID(value);
+      }
+      state.children[i][field] = value;
+      // partial re-render: update KPIs/results/chart live, but re-render full children list only on blur-safe fields
+      const result = calculateEducationFund(state.children);
+      renderKpis(result.summary);
+      renderChart(result);
+      renderResultCards(result.children);
+      // update inline displayed slider values without full rerender (keeps focus)
+      syncInlineLabels();
+    });
+  });
+  el.querySelectorAll('[data-namefield]').forEach((input) => {
+    input.addEventListener('input', (e) => {
+      const i = Number(input.dataset.index);
+      state.children[i].name = input.value;
+    });
+  });
+}
+
+function syncInlineLabels() {
+  document.querySelectorAll('[data-slider-val]').forEach((label) => {
+    const i = Number(label.dataset.index);
+    const field = label.dataset.field;
+    label.textContent = state.children[i][field] + (label.dataset.suffix || '');
+  });
+}
+
+function childCardHtml(child, i) {
+  const open = state.expanded === i ? 'open' : '';
+  const canRemove = state.children.length > 1;
+  return `
+  <div class="efc-card ${open}" style="border-color:${state.expanded===i ? child.color+'55' : ''}; background:${state.expanded===i ? child.color+'0d' : ''}">
+    <button type="button" class="efc-card-head" data-toggle="${i}">
+      <div class="efc-card-left">
+        <span class="efc-dot" style="background:${child.color}"></span>
+        <input data-namefield data-index="${i}" class="efc-card-name" value="${escapeHtml(child.name)}" placeholder="Anak ${i + 1}" />
+      </div>
+      <div class="efc-card-right">
+        <span class="efc-age-hint">${child.current_age} → ${child.education_start_age} th</span>
+        ${canRemove ? `<span class="efc-remove" data-remove="${i}">&#10005;</span>` : ''}
+        <svg class="efc-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+    </button>
+    <div class="efc-card-body">
+      <div class="efc-card-body-inner">
+        <div class="efc-fields">
+          ${numberField('Umur sekarang', 'current_age', i, child.current_age, 0, 30, 0.5, 'th')}
+          ${numberField('Umur mulai pendidikan', 'education_start_age', i, child.education_start_age, 0, 30, 0.5, 'th')}
+          ${numberField('Lama pendidikan', 'education_duration_years', i, child.education_duration_years, 1, 10, 1, 'th')}
+          ${currencyField('Biaya per tahun sekarang', 'current_annual_cost', i, child.current_annual_cost)}
+          <div class="full">${currencyField('Dana yang sudah dimiliki', 'existing_savings', i, child.existing_savings)}</div>
+          ${sliderField('Inflasi biaya pendidikan', 'education_inflation_rate', i, child.education_inflation_rate, 0, 25, 0.5, '%')}
+          ${sliderField('Target imbal hasil', 'expected_return_rate', i, child.expected_return_rate, 0, 25, 0.5, '%')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function numberField(label, field, i, value, min, max, step, suffix) {
+  return `
+  <label>
+    <span class="efc-label">${label}</span>
+    <div class="efc-input-wrap">
+      <input class="efc-input" type="number" data-field="${field}" data-index="${i}" value="${value}" min="${min}" max="${max}" step="${step}" />
+      <span class="efc-suffix">${suffix}</span>
+    </div>
+  </label>`;
+}
+
+function currencyField(label, field, i, value) {
+  return `
+  <label>
+    <span class="efc-label">${label}</span>
+    <div class="efc-input-wrap">
+      <span class="efc-currency-prefix">Rp</span>
+      <input class="efc-input-currency" type="text" inputmode="numeric" data-field="${field}" data-index="${i}" data-currency="1" value="${formatNumberID(value)}" />
+    </div>
+  </label>`;
+}
+
+function sliderField(label, field, i, value, min, max, step, suffix) {
+  return `
+  <div>
+    <div class="efc-slider-row">
+      <span class="efc-label" style="margin-bottom:0">${label}</span>
+      <span class="efc-slider-val" data-slider-val data-index="${i}" data-field="${field}" data-suffix="${suffix}">${value}${suffix}</span>
+    </div>
+    <input type="range" data-field="${field}" data-index="${i}" value="${value}" min="${min}" max="${max}" step="${step}" />
+  </div>`;
+}
+
+function renderKpis(summary) {
+  const el = document.getElementById('efc-kpis');
+  const items = [
+    { label: 'Total setoran / bulan', value: summary.total_monthly_contribution, color: 'var(--gold)' },
+    { label: 'Dana dibutuhkan saat mulai', value: summary.total_required_fund_at_start },
+    { label: 'Setara nilai hari ini', value: summary.total_present_value_today },
+    { label: 'Kekurangan yang dikejar', value: summary.total_gap_to_cover },
+  ];
+  el.innerHTML = items.map((it) => `
+    <div class="efc-kpi">
+      <div class="efc-kpi-label">${it.label}</div>
+      <p class="efc-kpi-big efc-serif" style="${it.color ? 'color:'+it.color : ''}">${formatCompact(it.value)}</p>
+      <p class="efc-kpi-sub">${formatRupiah(it.value)}</p>
+    </div>
+  `).join('');
+}
+
+function renderResultCards(results) {
+  const el = document.getElementById('efc-results');
+  el.innerHTML = results.map((r) => resultCardHtml(r)).join('');
+}
+
+function resultCardHtml(r) {
+  const pct = Math.round(r.coverage_pct);
+  const ring = coverageRingSvg(pct, r.color);
+  return `
+  <div class="efc-result-card" style="border-color:${r.color}40">
+    <div class="efc-result-top">
+      ${ring}
+      <div>
+        <p class="efc-result-name">${escapeHtml(r.name)}</p>
+        <p class="efc-result-meta">${r.years_until_start > 0 ? r.years_until_start + ' tahun menuju masa sekolah' : 'Mulai sekarang'} · menutupi ${pct}%</p>
+      </div>
+    </div>
+    <div class="efc-row"><span class="efc-row-label">${r.is_lump_sum_required ? 'Dana sekaligus dibutuhkan' : 'Setoran per bulan'}</span><span class="efc-row-value" style="color:${r.color}">${formatRupiah(r.monthly_contribution)}</span></div>
+    <div class="efc-row"><span class="efc-row-label">Total biaya nominal</span><span class="efc-row-value">${formatRupiah(r.total_nominal_cost)}</span></div>
+    <div class="efc-row"><span class="efc-row-label">Dana harus tersedia saat mulai</span><span class="efc-row-value">${formatRupiah(r.required_fund_at_start)}</span></div>
+    <div class="efc-row"><span class="efc-row-label">Dampak inflasi</span><span class="efc-row-value">${formatRupiah(r.inflation_impact)}</span></div>
+    <div class="efc-divider"></div>
+    <div class="efc-chips">
+      ${r.yearly_future_costs.map((c, i) => `<span class="efc-chip">Th${i + 1}: ${formatCompact(c)}</span>`).join('')}
+    </div>
+  </div>`;
+}
+
+function coverageRingSvg(pct, color) {
+  const r = 24, c = 2 * Math.PI * r;
+  const offset = c - (Math.min(100, pct) / 100) * c;
+  return `
+  <svg width="58" height="58" viewBox="0 0 58 58" style="flex-shrink:0">
+    <circle cx="29" cy="29" r="${r}" stroke="#334155" stroke-width="5" fill="none" />
+    <circle cx="29" cy="29" r="${r}" stroke="${color}" stroke-width="5" fill="none"
+      stroke-dasharray="${c}" stroke-dashoffset="${offset}" stroke-linecap="round" transform="rotate(-90 29 29)" />
+    <text x="29" y="33" text-anchor="middle" font-size="12" fill="#f8fafc" font-weight="600">${pct}%</text>
+  </svg>`;
+}
+
+function renderChart(result) {
+  const ctx = document.getElementById('efc-chart').getContext('2d');
+  const labels = result.yearly_projection.map((r) => 'Th ' + r.year);
+  const datasets = result.children.map((child, ci) => ({
+    label: child.name,
+    data: result.yearly_projection.map((r) => r.perChild[ci]),
+    borderColor: child.color,
+    backgroundColor: child.color,
+    tension: 0.3,
+    pointRadius: 0,
+    borderWidth: 2,
+  }));
+  datasets.push({
+    label: 'Total gabungan',
+    data: result.yearly_projection.map((r) => r.total),
+    borderColor: '#f8fafc',
+    borderDash: [4, 3],
+    tension: 0.3,
+    pointRadius: 0,
+    borderWidth: 2,
+  });
+
+  if (chartInstance) chartInstance.destroy();
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#94a3b8', font: { size: 11 } } },
+        tooltip: {
+          backgroundColor: '#020617',
+          borderColor: '#334155',
+          borderWidth: 1,
+          callbacks: { label: (ctx) => ctx.dataset.label + ': ' + formatRupiah(ctx.parsed.y) },
+        },
+      },
+      scales: {
+        x: { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { color: '#33415522' } },
+        y: { ticks: { color: '#94a3b8', font: { size: 11 }, callback: (v) => formatCompact(v) }, grid: { color: '#33415522' } },
+      },
+    },
+  });
+}
+
+function escapeHtml(str) {
+  return String(str || '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+}
+
+document.getElementById('efc-add-child').addEventListener('click', () => {
+  state.children.push(makeChild(state.children.length));
+  state.expanded = state.children.length - 1;
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
